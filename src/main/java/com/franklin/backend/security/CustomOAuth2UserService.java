@@ -24,6 +24,22 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     @Autowired
     private UserRepository userRepository;
 
+    private void validateOAuthProvider(String email, AuthenticationProvider currentProvider) {
+        Optional<User> existingUser = userRepository.findByEmail(email);
+
+        if (existingUser.isPresent()) {
+            AuthenticationProvider existingProvider = existingUser.get().getAuthenticationProvider();
+            if (existingProvider != currentProvider) {
+                String errorMsg = String.format(
+                        "Email %s is already registered with %s. Please use %s to login.",
+                        email,
+                        existingProvider,
+                        existingProvider);
+                throw new OAuth2AuthenticationProcessingException(errorMsg);
+            }
+        }
+    }
+
     @Override
     public OAuth2User loadUser(OAuth2UserRequest request) throws OAuth2AuthenticationProcessingException {
         OAuth2User oAuth2User = super.loadUser(request);
@@ -31,40 +47,34 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     }
 
     private OAuth2User processOAuth2User(OAuth2UserRequest request, OAuth2User oAuth2User) {
+
         AuthenticationProvider currentProvider = AuthenticationProvider
                 .valueOf(request.getClientRegistration().getRegistrationId().toUpperCase());
         OAuth2UserInfo userInfo = OAuth2UserInfoFactory.get(currentProvider, oAuth2User.getAttributes());
+
         String email = userInfo.getEmail();
         if (email == null || email.isBlank()) {
-            if (currentProvider == AuthenticationProvider.GITHUB) {
-                throw new OAuth2AuthenticationProcessingException(
-                        "No email found from OAuth2 provider. Make sure your email is set to public on your GitHub settings.");
-            } else {
-                throw new OAuth2AuthenticationProcessingException("No email found from OAuth2 provider.");
-            }
+            String errorMsg = (currentProvider == AuthenticationProvider.GITHUB)
+                    ? "No email found. Make sure your email is set to public on GitHub."
+                    : "No email found from OAuth2 provider.";
+            throw new OAuth2AuthenticationProcessingException(errorMsg);
         }
-        Optional<User> optional = userRepository.findByEmail(email);
-        User user;
-        if (optional.isPresent()) {
-            user = optional.get();
-            AuthenticationProvider userProvider = user.getAuthenticationProvider();
-            if (userProvider == currentProvider) {
-                user = updateExistingUser(user, userInfo);
-            } else {
-                throw new OAuth2AuthenticationProcessingException("You are signed up with " + userProvider
-                        + " with the email " + email + ". Please use " + userProvider + " to log in.");
-            }
-        } else {
-            user = registerNewUser(userInfo, currentProvider);
-        }
-        return new CustomOAuth2User(user, oAuth2User.getAttributes());
+
+        validateOAuthProvider(email, currentProvider);
+
+        Optional<User> userOptional = userRepository.findByEmail(email);
+        return new CustomOAuth2User(
+                userOptional.isPresent()
+                        ? updateExistingUser(userOptional.get(), userInfo)
+                        : registerNewUser(userInfo, currentProvider),
+                oAuth2User.getAttributes());
     }
 
     private User registerNewUser(OAuth2UserInfo userInfo, AuthenticationProvider provider) {
         User user = User.builder()
                 .authenticationProvider(provider)
                 .email(userInfo.getEmail())
-                .displayName((userInfo.getName() != null) ? userInfo.getName() : "User")
+                .displayName(userInfo.getName() != null ? userInfo.getName() : "User")
                 .avatarURL(userInfo.getAvatarURL())
                 .role(Role.NEW_USER)
                 .createdAt(DateFormat.getUnixTime())

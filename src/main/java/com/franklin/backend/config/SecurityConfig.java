@@ -11,6 +11,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.beans.factory.annotation.Value;
 
 import com.franklin.backend.entity.User.Role;
 import com.franklin.backend.security.CustomOAuth2AuthenticationFailureHandler;
@@ -32,6 +33,9 @@ public class SecurityConfig {
         @Autowired
         private CustomOAuth2AuthenticationFailureHandler customOAuth2AuthenticationFailureHandler;
 
+        @Value("${app.frontend.url}")
+        private String frontendUrl;
+
         @Bean
         public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
                 http
@@ -48,6 +52,7 @@ public class SecurityConfig {
                                                                         "/oauth2/**",
                                                                         "/login",
                                                                         "/login/**",
+                                                                        "/login/oauth2/code/*",
                                                                         "/logout/**",
                                                                         "/error")
                                                         .permitAll()
@@ -77,7 +82,7 @@ public class SecurityConfig {
                                 // Configure OAuth2 login
                                 .oauth2Login(oauth2 -> {
                                         oauth2
-                                                        .loginPage("/login")
+                                                        .loginPage(frontendUrl + "/login")
                                                         .userInfoEndpoint(userInfo -> userInfo
                                                                         .userService(customOAuth2UserService))
                                                         .successHandler(customOAuth2AuthenticationSuccessHandler)
@@ -114,8 +119,7 @@ public class SecurityConfig {
         @Bean
         CorsConfigurationSource corsConfigurationSource() {
                 CorsConfiguration configuration = new CorsConfiguration();
-                configuration.setAllowedOrigins(Arrays.asList(
-                                "http://localhost:3000"));
+                configuration.setAllowedOrigins(Arrays.asList(frontendUrl));
                 configuration.setAllowedMethods(Arrays.asList(
                                 "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
                 configuration.setAllowedHeaders(Arrays.asList("*"));
