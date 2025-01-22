@@ -31,9 +31,17 @@ public class CustomOAuth2AuthenticationSuccessHandler extends SimpleUrlAuthentic
             CustomOAuth2User oAuthUser = (CustomOAuth2User) authentication.getPrincipal();
             User user = userService.currentUser(oAuthUser);
 
-            String targetUrl = user.getRole().equals(Role.NEW_USER)
-                    ? frontendUrl + "/register"
-                    : frontendUrl + "/chat-app";
+            String redirectUri = (String) request.getSession().getAttribute("REDIRECT_URI");
+            request.getSession().removeAttribute("REDIRECT_URI");
+
+            String targetUrl;
+            if (user.getRole().equals(Role.NEW_USER)) {
+                targetUrl = frontendUrl + "/register";
+            } else if (redirectUri != null && !redirectUri.isEmpty()) {
+                targetUrl = redirectUri;
+            } else {
+                targetUrl = frontendUrl + "/chat-app";
+            }
 
             System.out.println("Redirecting to: " + targetUrl);
 
@@ -45,7 +53,6 @@ public class CustomOAuth2AuthenticationSuccessHandler extends SimpleUrlAuthentic
             response.sendRedirect(targetUrl);
 
         } catch (Exception e) {
-
             System.err.println("Error in authentication success handler: " + e.getMessage());
             response.sendRedirect(frontendUrl + "/login?error=authentication_error");
         }

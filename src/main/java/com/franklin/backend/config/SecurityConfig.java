@@ -12,11 +12,13 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 
 import com.franklin.backend.entity.User.Role;
 import com.franklin.backend.security.CustomOAuth2AuthenticationFailureHandler;
 import com.franklin.backend.security.CustomOAuth2AuthenticationSuccessHandler;
 import com.franklin.backend.security.CustomOAuth2UserService;
+import com.franklin.backend.security.RateLimitFilter;
 
 import java.util.Arrays;
 
@@ -33,6 +35,9 @@ public class SecurityConfig {
         @Autowired
         private CustomOAuth2AuthenticationFailureHandler customOAuth2AuthenticationFailureHandler;
 
+        @Autowired
+        private RateLimitFilter rateLimitFilter;
+
         @Value("${app.frontend.url}")
         private String frontendUrl;
 
@@ -41,6 +46,7 @@ public class SecurityConfig {
                 http
                                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                                 .csrf(csrf -> csrf.disable())
+                                .addFilterAfter(rateLimitFilter, BasicAuthenticationFilter.class)
                                 .sessionManagement(session -> session
                                                 .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                                                 .maximumSessions(1)
