@@ -15,6 +15,8 @@ This is a relatively chat application created using Spring Boot in the backend.
 ## Features
 
 - Spring Boot REST API
+- WebSocket support with STOMP
+- Real-time message broadcasting
 - OAuth 2.0 integration
 - Group chat management
 - Rate limiting:
@@ -24,5 +26,6 @@ This is a relatively chat application created using Spring Boot in the backend.
   - CORS configuration
   - Rate limiting protection
   - Session management
+  - WebSocket authentication
 
 ## Demo
