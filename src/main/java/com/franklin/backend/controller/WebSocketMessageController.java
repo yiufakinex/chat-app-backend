@@ -11,6 +11,7 @@ import com.franklin.backend.entity.Message;
 import com.franklin.backend.entity.User;
 import com.franklin.backend.security.CustomOAuth2User;
 import com.franklin.backend.service.MessageService;
+import com.franklin.backend.form.ChatNotification;
 import com.franklin.backend.form.WebSocketMessageForm;
 
 @Controller
@@ -26,13 +27,12 @@ public class WebSocketMessageController {
     public void sendMessage(@Payload WebSocketMessageForm messageForm, Authentication authentication) {
         CustomOAuth2User oauth2User = (CustomOAuth2User) authentication.getPrincipal();
         User user = oauth2User.getUser();
-
-        Message message = messageService.sendMessage(
-                messageForm.getChatId(),
-                messageForm.getContent(),
-                user);
+        Message message = messageService.sendMessage(messageForm.getChatId(), messageForm.getContent(), user);
 
         messagingTemplate.convertAndSend("/topic/chat." + messageForm.getChatId(), message);
+        messagingTemplate.convertAndSend(
+                "/topic/notifications." + messageForm.getChatId(),
+                new ChatNotification(user.getUsername(), messageForm.getChatId(), message.getContent()));
     }
 
     @MessageMapping("/chat.typing")
