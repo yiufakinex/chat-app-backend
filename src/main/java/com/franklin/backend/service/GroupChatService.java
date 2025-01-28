@@ -157,6 +157,16 @@ public class GroupChatService {
         groupChat.setLastMessageAt(DateFormat.getUnixTime());
         groupChat.setName(form.getName());
         groupChatRepository.save(groupChat);
+
+        for (User member : groupChat.getUsers()) {
+            if (!member.getId().equals(user.getId())) {
+                messagingTemplate.convertAndSend(
+                        "/topic/user." + member.getId() + ".chats",
+                        new ChatNotification("System", groupChat.getId(),
+                                String.format("'@%s' renamed the chat to '%s'", user.getUsername(), form.getName())));
+            }
+        }
+
         return messageRepository.save(message);
     }
 }
