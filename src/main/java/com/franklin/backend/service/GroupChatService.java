@@ -115,6 +115,11 @@ public class GroupChatService {
                 .build();
         groupChat.setLastMessageAt(DateFormat.getUnixTime());
         groupChatRepository.save(groupChat);
+
+        messagingTemplate.convertAndSend(
+                "/topic/user." + newUser.getId() + ".chats",
+                new ChatNotification("System", groupChat.getId(), "You were added to " + groupChat.getName()));
+
         return messageRepository.save(message);
     }
 
