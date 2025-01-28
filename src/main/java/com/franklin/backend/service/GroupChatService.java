@@ -4,6 +4,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import com.franklin.backend.entity.GroupChat;
@@ -14,6 +15,7 @@ import com.franklin.backend.exception.InvalidGroupChatException;
 import com.franklin.backend.exception.InvalidInputException;
 import com.franklin.backend.exception.InvalidUserException;
 import com.franklin.backend.form.AddGroupChatUserForm;
+import com.franklin.backend.form.ChatNotification;
 import com.franklin.backend.form.NewGroupChatForm;
 import com.franklin.backend.form.RenameGroupChatForm;
 import com.franklin.backend.repository.GroupChatRepository;
@@ -23,6 +25,8 @@ import com.franklin.backend.util.DateFormat;
 
 @Service
 public class GroupChatService {
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
 
     @Autowired
     private UserService userService;
@@ -50,12 +54,26 @@ public class GroupChatService {
                 .build();
         validator.validate(groupChat);
         groupChatRepository.save(groupChat);
-        newGroupChatForm.getUsernames().add(user.getUsername());
+
+        if (!newGroupChatForm.getUsernames().contains(user.getUsername())) {
+            newGroupChatForm.getUsernames().add(user.getUsername());
+        }
+
         for (String username : newGroupChatForm.getUsernames()) {
             User member = userService.findUserJoinedWithGroupChat(username);
             groupChat.addToGroupChat(member);
         }
-        return groupChatRepository.save(groupChat);
+
+        GroupChat savedGroupChat = groupChatRepository.save(groupChat);
+
+        for (User member : savedGroupChat.getUsers()) {
+            messagingTemplate.convertAndSend(
+                    "/topic/user." + member.getId() + ".chats",
+                    new ChatNotification("System", savedGroupChat.getId(),
+                            "You were added to " + savedGroupChat.getName()));
+        }
+
+        return savedGroupChat;
     }
 
     public Set<GroupChat> getGroupChats(User user) {

@@ -7,6 +7,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.security.core.Authentication;
 
+import com.franklin.backend.entity.GroupChat;
 import com.franklin.backend.entity.Message;
 import com.franklin.backend.entity.User;
 import com.franklin.backend.security.CustomOAuth2User;
@@ -45,6 +46,15 @@ public class WebSocketMessageController {
         messagingTemplate.convertAndSend(
                 "/topic/chat." + notification.getChatId() + ".typing",
                 notification);
+    }
+
+    @MessageMapping("/chat.create")
+    public void notifyNewChat(@Payload GroupChat groupChat) {
+        for (User user : groupChat.getUsers()) {
+            messagingTemplate.convertAndSend(
+                    "/topic/user." + user.getId() + ".chats",
+                    new ChatNotification("System", groupChat.getId(), "You were added to " + groupChat.getName()));
+        }
     }
 }
 
