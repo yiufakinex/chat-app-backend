@@ -19,6 +19,8 @@ This is a relatively chat application created using Spring Boot in the backend.
 - Real-time message broadcasting
 - OAuth 2.0 integration
 - Group chat management
+- Real-time chat list updates
+- Real-time notifications system
 - Rate limiting:
   - Authenticated users: 120 requests/minute
   - Anonymous users: 30 requests/minute
