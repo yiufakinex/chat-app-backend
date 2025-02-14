@@ -9,8 +9,8 @@ public class RateLimitService {
     private final ConcurrentHashMap<String, AtomicInteger> requestCounts = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Long> resetTimes = new ConcurrentHashMap<>();
 
-    private static final int MAX_REQUESTS_PER_MINUTE_ANONYMOUS = 30;
-    private static final int MAX_REQUESTS_PER_MINUTE_AUTHENTICATED = 120;
+    private static final int MAX_REQUESTS_PER_MINUTE_ANONYMOUS = 30000;
+    private static final int MAX_REQUESTS_PER_MINUTE_AUTHENTICATED = 62000;
 
     public void checkRateLimit(String key, boolean isAuthenticated) {
         long now = System.currentTimeMillis();

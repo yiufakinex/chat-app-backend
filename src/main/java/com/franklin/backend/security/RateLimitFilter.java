@@ -60,6 +60,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         return path.startsWith("/built/") ||
                 path.equals("/") ||
                 path.endsWith(".ico") ||
-                path.startsWith("/oauth2/");
+                path.startsWith("/oauth2/") ||
+                path.equals("/api/login/new_user");
     }
 }

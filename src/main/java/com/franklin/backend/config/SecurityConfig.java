@@ -18,6 +18,7 @@ import com.franklin.backend.entity.User.Role;
 import com.franklin.backend.security.CustomOAuth2AuthenticationFailureHandler;
 import com.franklin.backend.security.CustomOAuth2AuthenticationSuccessHandler;
 import com.franklin.backend.security.CustomOAuth2UserService;
+import com.franklin.backend.security.HttpCookieOAuth2AuthorizationRequestRepository;
 import com.franklin.backend.security.RateLimitFilter;
 
 import java.util.Arrays;
@@ -44,13 +45,13 @@ public class SecurityConfig {
         @Bean
         public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
                 http
+                                .requiresChannel(channel -> channel
+                                                .anyRequest().requiresSecure())
                                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                                 .csrf(csrf -> csrf.disable())
                                 .addFilterAfter(rateLimitFilter, BasicAuthenticationFilter.class)
                                 .sessionManagement(session -> session
-                                                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
-                                                .maximumSessions(1)
-                                                .expiredUrl("/login?expired"))
+                                                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                                 .authorizeHttpRequests(auth -> {
                                         auth
                                                         // OAuth2 and login endpoints
@@ -59,6 +60,7 @@ public class SecurityConfig {
                                                                         "/login",
                                                                         "/login/**",
                                                                         "/login/oauth2/code/*",
+                                                                        "/oauth2/authorization/*",
                                                                         "/logout/**",
                                                                         "/error")
                                                         .permitAll()
@@ -78,7 +80,8 @@ public class SecurityConfig {
                                                         .requestMatchers(
                                                                         "/api/groupchat/**",
                                                                         "/api/message/**",
-                                                                        "/api/users/**")
+                                                                        "/api/users/**",
+                                                                        "/api/**")
                                                         .hasAnyRole(Role.USER.toString(), Role.ADMIN.toString())
 
                                                         // All other requests need authentication
@@ -88,7 +91,12 @@ public class SecurityConfig {
                                 // Configure OAuth2 login
                                 .oauth2Login(oauth2 -> {
                                         oauth2
-                                                        .loginPage(frontendUrl + "/login")
+                                                        .authorizationEndpoint(authorization -> authorization
+                                                                        .baseUri("/oauth2/authorization")
+                                                                        .authorizationRequestRepository(
+                                                                                        cookieAuthorizationRequestRepository()))
+                                                        .redirectionEndpoint(redirection -> redirection
+                                                                        .baseUri("/login/oauth2/code/*"))
                                                         .userInfoEndpoint(userInfo -> userInfo
                                                                         .userService(customOAuth2UserService))
                                                         .successHandler(customOAuth2AuthenticationSuccessHandler)
@@ -123,16 +131,17 @@ public class SecurityConfig {
         }
 
         @Bean
+        public HttpCookieOAuth2AuthorizationRequestRepository cookieAuthorizationRequestRepository() {
+                return new HttpCookieOAuth2AuthorizationRequestRepository();
+        }
+
+        @Bean
         CorsConfigurationSource corsConfigurationSource() {
                 CorsConfiguration configuration = new CorsConfiguration();
                 configuration.setAllowedOrigins(Arrays.asList(frontendUrl));
-                configuration.setAllowedMethods(Arrays.asList(
-                                "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+                configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
                 configuration.setAllowedHeaders(Arrays.asList("*"));
                 configuration.setAllowCredentials(true);
-                configuration.setExposedHeaders(Arrays.asList(
-                                "Authorization",
-                                "Location"));
                 configuration.setMaxAge(3600L);
 
                 UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

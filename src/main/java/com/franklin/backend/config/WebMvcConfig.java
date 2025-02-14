@@ -11,11 +11,11 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Override
     public void addViewControllers(ViewControllerRegistry registry) {
-
         registry.addViewController("/").setViewName("forward:/index.html");
         registry.addViewController("/login").setViewName("forward:/index.html");
         registry.addViewController("/register").setViewName("forward:/index.html");
         registry.addViewController("/chat-app").setViewName("forward:/index.html");
+        registry.addViewController("/user-profile").setViewName("forward:/index.html");
 
         registry.addViewController("/**/{path:[^\\.]*}").setViewName("forward:/index.html");
     }
