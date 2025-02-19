@@ -25,11 +25,11 @@ public class UserController {
         return new ResponseEntity<>(Response.createBody("user", userService.findByUsername(username)), HttpStatus.OK);
     }
 
-    @PatchMapping(path = "/update/display_name", produces = MediaType.APPLICATION_JSON_VALUE)
+    @RequestMapping(path = "/update/display_name", method = { RequestMethod.POST,
+            RequestMethod.PATCH }, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<HashMap<String, Object>> updateDisplayName(@GetUser User user,
             @RequestParam("displayName") String displayName) {
         return new ResponseEntity<>(Response.createBody("user", userService.updateDisplayName(user, displayName)),
                 HttpStatus.OK);
     }
-
 }
